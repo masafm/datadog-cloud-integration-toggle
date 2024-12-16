@@ -1,0 +1,7 @@
+azure-functions
+azure-identity
+azure-mgmt-authorization
+boto3
+google-auth
+google-auth-oauthlib
+google-api-python-client
