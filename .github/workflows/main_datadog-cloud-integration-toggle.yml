@@ -23,14 +23,14 @@ jobs:
       uses: docker/login-action@v2
       with:
         registry: https://datadogcloudintegrationtoggle.azurecr.io/
-        username: ${{ secrets.AzureAppService_ContainerUsername_6764c98c38c54657a71dd9f9846cc118 }}
-        password: ${{ secrets.AzureAppService_ContainerPassword_a7e75fc09eca409f94e96e188ae4cf40 }}
+        username: ${{ secrets.AzureAppService_ContainerUsername_3f0f7f48190e4f699fc7db90e0b030ba }}
+        password: ${{ secrets.AzureAppService_ContainerPassword_22cbbfdbf2cf4cc8b39f98e9ae7bbee3 }}
 
     - name: Build and push container image to registry
       uses: docker/build-push-action@v3
       with:
         push: true
-        tags: datadogcloudintegrationtoggle.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_6764c98c38c54657a71dd9f9846cc118 }}/image:${{ github.sha }}
+        tags: datadogcloudintegrationtoggle.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_3f0f7f48190e4f699fc7db90e0b030ba }}/image:${{ github.sha }}
         file: ./Dockerfile
 
   deploy:
@@ -47,5 +47,5 @@ jobs:
       with:
         app-name: 'datadog-cloud-integration-toggle'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_29fd59cd302143fd895c2dd1458ee779 }}
-        images: 'datadogcloudintegrationtoggle.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_6764c98c38c54657a71dd9f9846cc118 }}/image:${{ github.sha }}'
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_a9b178924d414d919c7a814a624411e4 }}
+        images: 'datadogcloudintegrationtoggle.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_3f0f7f48190e4f699fc7db90e0b030ba }}/image:${{ github.sha }}'
