@@ -62,7 +62,7 @@ def handle_azure_action(action):
     credential = DefaultAzureCredential()
     client = AuthorizationManagementClient(credential, subscription_id)
 
-    if action == "delete":
+    if action == "disable":
         assignments = client.role_assignments.list_for_scope(scope)
         found = False
         for assignment in assignments:
@@ -74,7 +74,7 @@ def handle_azure_action(action):
         if not found:
             return func.HttpResponse("Role assignment not found or already deleted", status_code=201)
 
-    elif action == "create":
+    elif action == "enable":
         role_assignment_id = str(uuid.uuid4())
         client.role_assignments.create(
             scope=scope,
