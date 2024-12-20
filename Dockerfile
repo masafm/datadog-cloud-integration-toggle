@@ -15,9 +15,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
-# ベースイメージの元のエントリーポイントを取得
-RUN echo '#!/bin/bash' >/ddtrace-wrapper.sh && echo 'exec "$@"' >>/ddtrace-wrapper.sh \
-    && chmod +x /ddtrace-wrapper.sh
-
-# ddtrace-run を先頭に追加
-ENTRYPOINT ["ddtrace-run", "/ddtrace-wrapper.sh"]
+ENTRYPOINT ["ddtrace-run"]
