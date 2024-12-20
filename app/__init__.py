@@ -9,11 +9,13 @@ import boto3
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import azure.functions as func
+from ddtrace import tracer
 
 # Initialize AWS IAM client
 iam = boto3.client('iam')
 
 # Initialize GCP IAM service
+@tracer.wrap()
 def get_gcp_iam_service():
     service_account_key = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
     if not service_account_key:
@@ -23,6 +25,7 @@ def get_gcp_iam_service():
     credentials = service_account.Credentials.from_service_account_info(credentials_info)
     return build("iam", "v1", credentials=credentials)
 
+@tracer.wrap()
 def main(req: func.HttpRequest) -> func.HttpResponse:
     try:
         # Get request parameters
@@ -46,6 +49,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         logging.error(f"Error: {e}")
         return func.HttpResponse(f"An error occurred: {e}", status_code=500)
 
+@tracer.wrap()
 def handle_azure_action(action):
     # Get Azure environment variables
     assignee = os.environ.get("ASSIGNEE_PRINCIPAL_ID")
@@ -90,6 +94,7 @@ def handle_azure_action(action):
     else:
         return func.HttpResponse("Invalid action for Azure", status_code=400)
 
+@tracer.wrap()
 def handle_aws_action(action):
     # Get AWS environment variables
     role_name = os.getenv("AWS_ROLE_NAME")
@@ -107,6 +112,7 @@ def handle_aws_action(action):
     else:
         return func.HttpResponse("Invalid action for AWS", status_code=400)
 
+@tracer.wrap()
 def aws_integration_enable(role_name, policy_arn):
     try:
         iam.delete_role_policy(
@@ -216,6 +222,7 @@ def aws_integration_enable(role_name, policy_arn):
     )
     logging.info(f"Deleted old policy version: {old_version['VersionId']}")
 
+@tracer.wrap()
 def aws_integration_disable(role_name, policy_arn):
     policy_document = {
         "Version": "2012-10-17",
@@ -242,6 +249,7 @@ def aws_integration_disable(role_name, policy_arn):
     )
     logging.info(f"Deleted old policy version: {old_version['VersionId']}")
 
+@tracer.wrap()
 def handle_gcp_action(action):
     # Get GCP environment variables
     service_account_email = os.getenv("SERVICE_ACCOUNT_EMAIL")
