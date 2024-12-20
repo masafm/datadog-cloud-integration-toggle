@@ -16,3 +16,4 @@ ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
 ENTRYPOINT ["ddtrace-run"]
+CMD ["/opt/startup/start_nonappservice.sh"]
