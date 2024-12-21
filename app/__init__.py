@@ -19,6 +19,7 @@ iam = boto3.client('iam')
 FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
           '[dd.service=%(dd.service)s dd.env=%(dd.env)s dd.version=%(dd.version)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] '
           '- %(message)s')
+logging.basicConfig(format=FORMAT)
 
 # 環境変数からUDP送信先のホストとポートを取得
 UDP_HOST = os.getenv('LOG_UDP_HOST', '127.0.0.1')  # 環境変数が無ければ '127.0.0.1'
