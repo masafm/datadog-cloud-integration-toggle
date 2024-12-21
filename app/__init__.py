@@ -23,6 +23,7 @@ FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
 # 環境変数からUDP送信先のホストとポートを取得
 UDP_HOST = os.getenv('LOG_UDP_HOST', '127.0.0.1')  # 環境変数が無ければ '127.0.0.1'
 UDP_PORT = int(os.getenv('LOG_UDP_PORT', 514))     # 環境変数が無ければ 514
+print(f"Debug: UDP_HOST={UDP_HOST}, UDP_PORT={UDP_PORT}")
 
 # ロガーのセットアップ
 logger = logging.getLogger('udp_logger')
@@ -74,7 +75,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             return func.HttpResponse("Invalid integration parameter", status_code=400)
 
     except Exception as e:
-        logging.error(f"Error: {e}")
+        logger.error(f"Error: {e}")
         return func.HttpResponse(f"An error occurred: {e}", status_code=500)
 
 @tracer.wrap()
@@ -148,7 +149,7 @@ def aws_integration_enable(role_name, policy_arn):
             PolicyName='AutomatedDenyPleaseUseSharedSandboxOrgSeeIAMRoleDescriptionForHelp'
         )
     except Exception as e:
-        logging.error(f"Error deleting role policy: {e}")
+        logger.error(f"Error deleting role policy: {e}")
 
     policy_document = {
         "Version": "2012-10-17",
@@ -240,7 +241,7 @@ def aws_integration_enable(role_name, policy_arn):
         PolicyDocument=json.dumps(policy_document),
         SetAsDefault=True
     )
-    logging.info(f"Created new policy version: {response['PolicyVersion']['VersionId']}")
+    logger.info(f"Created new policy version: {response['PolicyVersion']['VersionId']}")
 
     versions = iam.list_policy_versions(PolicyArn=policy_arn)['Versions']
     old_version = [v for v in versions if not v['IsDefaultVersion']][-1]
@@ -248,7 +249,7 @@ def aws_integration_enable(role_name, policy_arn):
         PolicyArn=policy_arn,
         VersionId=old_version['VersionId']
     )
-    logging.info(f"Deleted old policy version: {old_version['VersionId']}")
+    logger.info(f"Deleted old policy version: {old_version['VersionId']}")
 
 @tracer.wrap()
 def aws_integration_disable(role_name, policy_arn):
@@ -267,7 +268,7 @@ def aws_integration_disable(role_name, policy_arn):
         PolicyDocument=json.dumps(policy_document),
         SetAsDefault=True
     )
-    logging.info(f"Created new policy version: {response['PolicyVersion']['VersionId']}")
+    logger.info(f"Created new policy version: {response['PolicyVersion']['VersionId']}")
 
     versions = iam.list_policy_versions(PolicyArn=policy_arn)['Versions']
     old_version = [v for v in versions if not v['IsDefaultVersion']][-1]
@@ -275,7 +276,7 @@ def aws_integration_disable(role_name, policy_arn):
         PolicyArn=policy_arn,
         VersionId=old_version['VersionId']
     )
-    logging.info(f"Deleted old policy version: {old_version['VersionId']}")
+    logger.info(f"Deleted old policy version: {old_version['VersionId']}")
 
 @tracer.wrap()
 def handle_gcp_action(action):
@@ -298,5 +299,5 @@ def handle_gcp_action(action):
         else:
             return func.HttpResponse("Invalid action for GCP", status_code=400)
     except Exception as e:
-        logging.error(f"Error in GCP action: {e}")
+        logger.error(f"Error in GCP action: {e}")
         return func.HttpResponse(f"An error occurred: {e}", status_code=500)
