@@ -1,4 +1,5 @@
 import logging
+import logging.handlers
 import os
 import uuid
 import json
@@ -18,7 +19,28 @@ iam = boto3.client('iam')
 FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
           '[dd.service=%(dd.service)s dd.env=%(dd.env)s dd.version=%(dd.version)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] '
           '- %(message)s')
-logging.basicConfig(format=FORMAT)
+
+# 環境変数からUDP送信先のホストとポートを取得
+UDP_HOST = os.getenv('LOG_UDP_HOST', '127.0.0.1')  # 環境変数が無ければ '127.0.0.1'
+UDP_PORT = int(os.getenv('LOG_UDP_PORT', 514))     # 環境変数が無ければ 514
+
+# ロガーのセットアップ
+logger = logging.getLogger('udp_logger')
+logger.setLevel(logging.DEBUG)
+
+# DatagramHandlerのセットアップ (UDP送信用)
+udp_handler = logging.handlers.DatagramHandler(UDP_HOST, UDP_PORT)
+udp_formatter = logging.Formatter(FORMAT)
+udp_handler.setFormatter(udp_formatter)
+
+# StreamHandlerのセットアップ (標準出力用)
+stream_handler = logging.StreamHandler()
+stream_formatter = logging.Formatter(FORMAT)
+stream_handler.setFormatter(stream_formatter)
+
+# ハンドラをロガーに追加
+logger.addHandler(udp_handler)    # UDP送信用
+logger.addHandler(stream_handler) # 標準出力用
 
 # Initialize GCP IAM service
 @tracer.wrap()
