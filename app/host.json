@@ -3,10 +3,7 @@
   "functionTimeout": "00:05:00",
   "logging": {
     "logLevel": {
-      "default": "Warning",
-      "Host.Results": "Error",
-      "Function": "Information",
-      "Host.Aggregator": "Trace"
+      "default": "Trace"
     }
   },
   "extensions": {
