@@ -156,7 +156,7 @@ def handle_azure_action(action):
             if assignment.principal_id == assignee and assignment.role_definition_id.endswith(role):
                 client.role_assignments.delete_by_id(assignment.id)
                 found = True
-                logger.info(f"Role assignment {assignment.role_definition_id} deleted")
+                logger.info(f"[AZURE] Role assignment {assignment.role_definition_id} deleted")
                 return log_and_respond(
                     "Azure Integration Disabled!",
                     status_code=200,
