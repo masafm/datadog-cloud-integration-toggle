@@ -122,9 +122,11 @@ def handle_azure_action(action):
             if assignment.principal_id == assignee and assignment.role_definition_id.endswith(role):
                 client.role_assignments.delete_by_id(assignment.id)
                 found = True
+                logger.info(f"Azure Role assignment deleted")
                 return func.HttpResponse("Role assignment deleted", status_code=200)
 
         if not found:
+            logger.info(f"Azure Role assignment not found or already deleted")
             return func.HttpResponse("Role assignment not found or already deleted", status_code=201)
 
     elif action == "enable":
@@ -138,9 +140,11 @@ def handle_azure_action(action):
                 principal_type="ServicePrincipal",
             ),
         )
+        logger.info(f"Azure Role assignment created")
         return func.HttpResponse("Role assignment created", status_code=200)
 
     else:
+        logger.info(f"Invalid action for Azure")
         return func.HttpResponse("Invalid action for Azure", status_code=400)
 
 @tracer.wrap()
