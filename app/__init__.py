@@ -12,6 +12,8 @@ from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import azure.functions as func
 from ddtrace import tracer
+from ddtrace import patch
+patch(logging=True)
 
 # Initialize AWS IAM client
 iam = boto3.client('iam')
