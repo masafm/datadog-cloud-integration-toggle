@@ -15,6 +15,20 @@ from ddtrace import tracer
 # Initialize AWS IAM client
 iam = boto3.client('iam')
 
+class UDPTextHandler(logging.Handler):
+    def __init__(self, host, port):
+        super().__init__()
+        self.host = host
+        self.port = port
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+
+    def emit(self, record):
+        try:
+            msg = self.format(record)
+            self.sock.sendto(msg.encode('utf-8'), (self.host, self.port))
+        except Exception:
+            self.handleError(record)
+
 # Logging
 FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
           '[dd.service=%(dd.service)s dd.env=%(dd.env)s dd.version=%(dd.version)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] '
@@ -31,7 +45,8 @@ logger = logging.getLogger('udp_logger')
 logger.setLevel(logging.DEBUG)
 
 # DatagramHandlerのセットアップ (UDP送信用)
-udp_handler = logging.handlers.DatagramHandler(UDP_HOST, UDP_PORT)
+#udp_handler = logging.handlers.DatagramHandler(UDP_HOST, UDP_PORT)
+udp_handler = UDPTextHandler(UDP_HOST, UDP_PORT)
 udp_formatter = logging.Formatter(FORMAT)
 udp_handler.setFormatter(udp_formatter)
 
