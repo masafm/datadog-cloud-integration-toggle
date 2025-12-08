@@ -33,8 +33,8 @@ jobs:
         tags: datadogcloudintegrationtoggle.azurecr.io/${{ secrets.AzureAppService_ContainerUsername_3f0f7f48190e4f699fc7db90e0b030ba }}/image:${{ github.sha }}
         file: ./Dockerfile
         build-args: |
-          DD_GIT_REPOSITORY_URL=${{ steps.gitmeta.outputs.repo_url }}
-          DD_GIT_COMMIT_SHA=${{ steps.gitmeta.outputs.commit_sha }}
+          DD_GIT_REPOSITORY_URL=$(git config --get remote.origin.url)
+          DD_GIT_COMMIT_SHA=$(git rev-parse HEAD)
 
   deploy:
     runs-on: ubuntu-latest
