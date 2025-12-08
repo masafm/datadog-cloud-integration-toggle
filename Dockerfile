@@ -15,5 +15,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 ENV AzureWebJobsScriptRoot=/home/site/wwwroot \
     AzureFunctionsJobHost__Logging__Console__IsEnabled=true
 
+# Datadog Source Code Integration
+ARG DD_GIT_REPOSITORY_URL
+ARG DD_GIT_COMMIT_SHA
+ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
+ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
+
 ENTRYPOINT ["ddtrace-run"]
 CMD ["/opt/startup/start_nonappservice.sh"]
