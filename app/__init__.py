@@ -44,7 +44,7 @@ UDP_PORT = int(os.getenv('LOG_UDP_PORT', 514))
 print(f"Debug: UDP_HOST={UDP_HOST}, UDP_PORT={UDP_PORT}")
 
 # ロガーのセットアップ
-logger = logging.getLogger('udp_logger')
+logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 
 udp_handler = UDPTextHandler(UDP_HOST, UDP_PORT)
