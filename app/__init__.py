@@ -86,7 +86,7 @@ def log_and_respond(message: str,
 def get_gcp_iam_service():
     service_account_key = os.getenv("GCP_SERVICE_ACCOUNT_KEY")
     if not service_account_key:
-        # 環境変数不足も必ずログ + レスポンス
+        # 環境変数不足は例外にして呼び出し側で共通エラーハンドリング
         raise ValueError("Environment variable GCP_SERVICE_ACCOUNT_KEY is not set")
 
     credentials_info = json.loads(service_account_key)
@@ -106,6 +106,8 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 cloud="COMMON",
                 level="error"
             )
+
+        logger.info(f"[COMMON] Request received: integration={integration}, action={action}")
 
         if integration == 'azure':
             return handle_azure_action(action)
@@ -137,6 +139,10 @@ def handle_azure_action(action):
     subscription_id = os.environ.get("SUBSCRIPTION_ID")
 
     if not all([subscription_id, assignee, role]):
+        logger.error(
+            f"[AZURE] Required environment variables missing: "
+            f"subscription_id={subscription_id}, assignee={assignee}, role={role}"
+        )
         return log_and_respond(
             "Required environment variables are not set",
             status_code=500,
@@ -146,6 +152,11 @@ def handle_azure_action(action):
 
     scope = f"/subscriptions/{subscription_id}"
 
+    logger.info(
+        f"[AZURE] Request received: action={action}, "
+        f"subscription_id={subscription_id}, assignee_principal_id={assignee}, role_definition_id={role}, scope={scope}"
+    )
+
     credential = DefaultAzureCredential()
     client = AuthorizationManagementClient(credential, subscription_id)
 
@@ -154,9 +165,13 @@ def handle_azure_action(action):
         found = False
         for assignment in assignments:
             if assignment.principal_id == assignee and assignment.role_definition_id.endswith(role):
+                logger.info(
+                    f"[AZURE] Deleting role assignment: "
+                    f"id={assignment.id}, role_definition_id={assignment.role_definition_id}, "
+                    f"principal_id={assignment.principal_id}, scope={scope}"
+                )
                 client.role_assignments.delete_by_id(assignment.id)
                 found = True
-                logger.info(f"[AZURE] Role assignment {assignment.role_definition_id} deleted (principal_id={assignment.principal_id})")
                 return log_and_respond(
                     "Azure Integration Disabled!",
                     status_code=200,
@@ -165,6 +180,10 @@ def handle_azure_action(action):
                 )
 
         if not found:
+            logger.info(
+                f"[AZURE] Role assignment not found or already deleted: "
+                f"subscription_id={subscription_id}, assignee_principal_id={assignee}, role_definition_id_suffix={role}"
+            )
             return log_and_respond(
                 "Role assignment not found or already deleted",
                 status_code=201,
@@ -174,6 +193,11 @@ def handle_azure_action(action):
 
     elif action == "enable":
         role_assignment_id = str(uuid.uuid4())
+        logger.info(
+            f"[AZURE] Creating role assignment: "
+            f"role_assignment_id={role_assignment_id}, subscription_id={subscription_id}, "
+            f"assignee_principal_id={assignee}, role_definition_id={role}, scope={scope}"
+        )
         result = client.role_assignments.create(
             scope=scope,
             role_assignment_name=role_assignment_id,
@@ -198,6 +222,7 @@ def handle_azure_action(action):
         )
 
     else:
+        logger.warning(f"[AZURE] Invalid action for Azure: action={action}")
         return log_and_respond(
             "Invalid action for Azure",
             status_code=400,
@@ -211,6 +236,10 @@ def handle_aws_action(action):
     policy_arn = os.getenv("AWS_POLICY_ARN")
 
     if not all([role_name, policy_arn]):
+        logger.error(
+            f"[AWS] Required AWS environment variables are not set: "
+            f"role_name={role_name}, policy_arn={policy_arn}"
+        )
         return log_and_respond(
             "Required AWS environment variables are not set",
             status_code=500,
@@ -238,6 +267,7 @@ def handle_aws_action(action):
             level="info"
         )
     else:
+        logger.warning(f"[AWS] Invalid action for AWS: action={action}")
         return log_and_respond(
             "Invalid action for AWS",
             status_code=400,
@@ -248,7 +278,7 @@ def handle_aws_action(action):
 @tracer.wrap()
 def aws_integration_enable(role_name, policy_arn):
     # どのロールから deny ポリシーを削除しようとしているかログ
-    logger.info(f"[AWS] Trying to delete role inline policy for role_name={role_name}")
+    logger.info(f"[AWS] Trying to delete inline deny policy from role_name={role_name}")
 
     try:
         iam.delete_role_policy(
@@ -554,6 +584,7 @@ def aws_integration_disable(role_name, policy_arn):
 def handle_gcp_action(action):
     service_account_email = os.getenv("SERVICE_ACCOUNT_EMAIL")
     if not service_account_email:
+        logger.error("[GCP] Environment variable SERVICE_ACCOUNT_EMAIL is not set")
         return log_and_respond(
             "Environment variable SERVICE_ACCOUNT_EMAIL is not set",
             status_code=500,
@@ -564,10 +595,19 @@ def handle_gcp_action(action):
     iam_service = get_gcp_iam_service()
     resource_name = f"projects/-/serviceAccounts/{service_account_email}"
 
+    logger.info(
+        f"[GCP] Request received: action={action}, "
+        f"service_account_email={service_account_email}, resource_name={resource_name}"
+    )
+
     try:
         if action == "disable":
+            logger.info(
+                f"[GCP] Disabling service account: "
+                f"service_account_email={service_account_email}, resource_name={resource_name}"
+            )
             iam_service.projects().serviceAccounts().disable(name=resource_name).execute()
-            logger.info(f"[GCP] Service account {service_account_email} has been disabled")
+            logger.info(f"[GCP] Service account disabled successfully: service_account_email={service_account_email}")
             return log_and_respond(
                 "GCP Integration Disabled!",
                 status_code=200,
@@ -575,8 +615,12 @@ def handle_gcp_action(action):
                 level="info"
             )
         elif action == "enable":
+            logger.info(
+                f"[GCP] Enabling service account: "
+                f"service_account_email={service_account_email}, resource_name={resource_name}"
+            )
             iam_service.projects().serviceAccounts().enable(name=resource_name).execute()
-            logger.info(f"[GCP] Service account {service_account_email} has been enabled")
+            logger.info(f"[GCP] Service account enabled successfully: service_account_email={service_account_email}")
             return log_and_respond(
                 "GCP Integration Enabled!",
                 status_code=200,
@@ -584,6 +628,7 @@ def handle_gcp_action(action):
                 level="info"
             )
         else:
+            logger.warning(f"[GCP] Invalid action for GCP: action={action}")
             return log_and_respond(
                 "Invalid action for GCP",
                 status_code=400,
@@ -591,9 +636,14 @@ def handle_gcp_action(action):
                 level="error"
             )
     except Exception as e:
+        logger.error(
+            f"[GCP] Error in GCP action: action={action}, "
+            f"service_account_email={service_account_email}, error={e}"
+        )
         return log_and_respond(
             f"An error occurred: {e}",
             status_code=500,
             cloud="GCP",
             level="error"
         )
+
