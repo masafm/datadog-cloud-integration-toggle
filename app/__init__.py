@@ -30,10 +30,10 @@ class UDPTextHandler(logging.Handler):
             self.handleError(record)
 
 # Logging
-FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
-          '[dd.service=%(dd.service)s dd.env=%(dd.env)s dd.version=%(dd.version)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] '
-          '- %(message)s')
-logging.basicConfig(format=FORMAT)
+#FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
+#          '[dd.service=%(dd.service)s dd.env=%(dd.env)s dd.version=%(dd.version)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] '
+#          '- %(message)s')
+#logging.basicConfig(format=FORMAT)
 
 # 環境変数からUDP送信先のホストとポートを取得
 UDP_HOST = os.getenv('LOG_UDP_HOST', '127.0.0.1')
@@ -42,16 +42,14 @@ print(f"Debug: UDP_HOST={UDP_HOST}, UDP_PORT={UDP_PORT}")
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
-dd_logger = logging.getLogger("ddtrace")
-dd_logger.setLevel(logging.DEBUG)
 
 udp_handler = UDPTextHandler(UDP_HOST, UDP_PORT)
-udp_formatter = logging.Formatter(FORMAT)
-udp_handler.setFormatter(udp_formatter)
+#udp_formatter = logging.Formatter(FORMAT)
+#udp_handler.setFormatter(udp_formatter)
 
 stream_handler = logging.StreamHandler()
-stream_formatter = logging.Formatter(FORMAT)
-stream_handler.setFormatter(stream_formatter)
+#stream_formatter = logging.Formatter(FORMAT)
+#stream_handler.setFormatter(stream_formatter)
 
 logger.addHandler(udp_handler)
 logger.addHandler(stream_handler)
