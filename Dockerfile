@@ -22,6 +22,7 @@ ENV DD_GIT_REPOSITORY_URL=${DD_GIT_REPOSITORY_URL}
 ENV DD_GIT_COMMIT_SHA=${DD_GIT_COMMIT_SHA}
 ENV DD_EXCEPTION_REPLAY_ENABLED=true
 ENV DD_APPSEC_ENABLED=true
+ENV DD_PATCH_MODULES=urllib3
 
-ENTRYPOINT ["ddtrace-run"]
-CMD ["/opt/startup/start_nonappservice.sh"]
+#ENTRYPOINT ["ddtrace-run"]
+#CMD ["/opt/startup/start_nonappservice.sh"]

@@ -55,6 +55,7 @@ logger.addHandler(udp_handler)
 logger.addHandler(stream_handler)
 
 # ロギングの設定より後にロードすること
+import ddtrace.auto
 from ddtrace import tracer, patch
 patch(logging=True)
 
