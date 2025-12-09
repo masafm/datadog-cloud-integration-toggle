@@ -11,9 +11,6 @@ import boto3
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import azure.functions as func
-from ddtrace import tracer
-from ddtrace import patch
-patch(logging=True)
 
 # Initialize AWS IAM client
 iam = boto3.client('iam')
@@ -33,19 +30,16 @@ class UDPTextHandler(logging.Handler):
             self.handleError(record)
 
 # Logging
-BASIC_FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
-          '- %(message)s')
 FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
           '[dd.service=%(dd.service)s dd.env=%(dd.env)s dd.version=%(dd.version)s dd.trace_id=%(dd.trace_id)s dd.span_id=%(dd.span_id)s] '
           '- %(message)s')
-logging.basicConfig(format=BASIC_FORMAT)
+logging.basicConfig(format=FORMAT)
 
 # 環境変数からUDP送信先のホストとポートを取得
 UDP_HOST = os.getenv('LOG_UDP_HOST', '127.0.0.1')
 UDP_PORT = int(os.getenv('LOG_UDP_PORT', 514))
 print(f"Debug: UDP_HOST={UDP_HOST}, UDP_PORT={UDP_PORT}")
 
-# ロガーのセットアップ
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
 dd_logger = logging.getLogger("ddtrace")
@@ -55,22 +49,16 @@ udp_handler = UDPTextHandler(UDP_HOST, UDP_PORT)
 udp_formatter = logging.Formatter(FORMAT)
 udp_handler.setFormatter(udp_formatter)
 
-dd_udp_handler = UDPTextHandler(UDP_HOST, UDP_PORT)
-dd_udp_formatter = logging.Formatter(BASIC_FORMAT)
-dd_udp_handler.setFormatter(dd_udp_formatter)
-
 stream_handler = logging.StreamHandler()
 stream_formatter = logging.Formatter(FORMAT)
 stream_handler.setFormatter(stream_formatter)
 
-dd_stream_handler = logging.StreamHandler()
-dd_stream_formatter = logging.Formatter(BASIC_FORMAT)
-dd_stream_handler.setFormatter(dd_stream_formatter)
-
 logger.addHandler(udp_handler)
-logger.addHandler(dd_udp_handler)
 logger.addHandler(stream_handler)
-logger.addHandler(dd_stream_handler)
+
+# ロギングの設定より後にロードすること
+from ddtrace import tracer, patch
+patch(logging=True)
 
 # 共通: ログ出力とレスポンス生成を一箇所に集約
 def log_and_respond(message: str,
