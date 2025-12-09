@@ -156,7 +156,7 @@ def handle_azure_action(action):
             if assignment.principal_id == assignee and assignment.role_definition_id.endswith(role):
                 client.role_assignments.delete_by_id(assignment.id)
                 found = True
-                logger.info(f"[AZURE] Role assignment {assignment.role_definition_id} deleted")
+                logger.info(f"[AZURE] Role assignment {assignment.role_definition_id} deleted (principal_id={assignment.principal_id})")
                 return log_and_respond(
                     "Azure Integration Disabled!",
                     status_code=200,
@@ -218,6 +218,9 @@ def handle_aws_action(action):
             level="error"
         )
 
+    # ここで「どのロール／どのポリシーを操作するか」を事前にログ
+    logger.info(f"[AWS] Request received: action={action}, role_name={role_name}, policy_arn={policy_arn}")
+
     if action == "enable":
         aws_integration_enable(role_name, policy_arn)
         return log_and_respond(
@@ -244,14 +247,20 @@ def handle_aws_action(action):
 
 @tracer.wrap()
 def aws_integration_enable(role_name, policy_arn):
+    # どのロールから deny ポリシーを削除しようとしているかログ
+    logger.info(f"[AWS] Trying to delete role inline policy for role_name={role_name}")
+
     try:
         iam.delete_role_policy(
             RoleName=role_name,
             PolicyName='AutomatedDenyPleaseUseSharedSandboxOrgSeeIAMRoleDescriptionForHelp'
         )
+        logger.info(f"[AWS] Deleted inline deny policy from role_name={role_name}")
     except Exception as e:
         # ここはレスポンスではなく内部処理なのでログだけ
-        logger.warn(f"[AWS] Error deleting role policy: {e}")
+        logger.warning(f"[AWS] Error deleting role policy for role_name={role_name}: {e}")
+
+    logger.info(f"[AWS] Creating new ALLOW policy version for policy_arn={policy_arn}, role_name={role_name}")
 
     policy_document = {
         "Version": "2012-10-17",
@@ -490,7 +499,10 @@ def aws_integration_enable(role_name, policy_arn):
         PolicyDocument=json.dumps(policy_document),
         SetAsDefault=True
     )
-    logger.info(f"[AWS] Created new policy version: {response['PolicyVersion']['VersionId']}")
+    logger.info(
+        f"[AWS] Created new ALLOW policy version: "
+        f"policy_arn={policy_arn}, role_name={role_name}, version_id={response['PolicyVersion']['VersionId']}"
+    )
 
     versions = iam.list_policy_versions(PolicyArn=policy_arn)['Versions']
     old_version = [v for v in versions if not v['IsDefaultVersion']][-1]
@@ -498,10 +510,15 @@ def aws_integration_enable(role_name, policy_arn):
         PolicyArn=policy_arn,
         VersionId=old_version['VersionId']
     )
-    logger.info(f"[AWS] Deleted old policy version: {old_version['VersionId']}")
+    logger.info(
+        f"[AWS] Deleted old policy version: "
+        f"policy_arn={policy_arn}, role_name={role_name}, version_id={old_version['VersionId']}"
+    )
 
 @tracer.wrap()
 def aws_integration_disable(role_name, policy_arn):
+    logger.info(f"[AWS] Creating new DENY policy version for policy_arn={policy_arn}, role_name={role_name}")
+
     policy_document = {
         "Version": "2012-10-17",
         "Statement": [
@@ -517,7 +534,10 @@ def aws_integration_disable(role_name, policy_arn):
         PolicyDocument=json.dumps(policy_document),
         SetAsDefault=True
     )
-    logger.info(f"[AWS] Created new policy version: {response['PolicyVersion']['VersionId']}")
+    logger.info(
+        f"[AWS] Created new DENY policy version: "
+        f"policy_arn={policy_arn}, role_name={role_name}, version_id={response['PolicyVersion']['VersionId']}"
+    )
 
     versions = iam.list_policy_versions(PolicyArn=policy_arn)['Versions']
     old_version = [v for v in versions if not v['IsDefaultVersion']][-1]
@@ -525,7 +545,10 @@ def aws_integration_disable(role_name, policy_arn):
         PolicyArn=policy_arn,
         VersionId=old_version['VersionId']
     )
-    logger.info(f"[AWS] Deleted old policy version: {old_version['VersionId']}")
+    logger.info(
+        f"[AWS] Deleted old policy version: "
+        f"policy_arn={policy_arn}, role_name={role_name}, version_id={old_version['VersionId']}"
+    )
 
 @tracer.wrap()
 def handle_gcp_action(action):
@@ -546,7 +569,7 @@ def handle_gcp_action(action):
             iam_service.projects().serviceAccounts().disable(name=resource_name).execute()
             logger.info(f"[GCP] Service account {service_account_email} has been disabled")
             return log_and_respond(
-                f"GCP Integration Disabled!",
+                "GCP Integration Disabled!",
                 status_code=200,
                 cloud="GCP",
                 level="info"
@@ -555,7 +578,7 @@ def handle_gcp_action(action):
             iam_service.projects().serviceAccounts().enable(name=resource_name).execute()
             logger.info(f"[GCP] Service account {service_account_email} has been enabled")
             return log_and_respond(
-                f"GCP Integration Enabled!",
+                "GCP Integration Enabled!",
                 status_code=200,
                 cloud="GCP",
                 level="info"
