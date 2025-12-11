@@ -4,16 +4,6 @@ import socket
 import os
 import uuid
 import json
-from azure.identity import DefaultAzureCredential
-from azure.mgmt.authorization import AuthorizationManagementClient
-from azure.mgmt.authorization.models import RoleAssignmentCreateParameters
-import boto3
-from google.oauth2 import service_account
-from googleapiclient.discovery import build
-import azure.functions as func
-
-# Initialize AWS IAM client
-iam = boto3.client('iam')
 
 class UDPTextHandler(logging.Handler):
     def __init__(self, host, port):
@@ -38,7 +28,6 @@ logging.basicConfig(format=FORMAT)
 # 環境変数からUDP送信先のホストとポートを取得
 UDP_HOST = os.getenv('LOG_UDP_HOST', '127.0.0.1')
 UDP_PORT = int(os.getenv('LOG_UDP_PORT', 514))
-print(f"Debug: UDP_HOST={UDP_HOST}, UDP_PORT={UDP_PORT}")
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -53,11 +42,22 @@ stream_handler.setFormatter(stream_formatter)
 
 logger.addHandler(udp_handler)
 logger.addHandler(stream_handler)
+logger.debug(f"UDP_HOST={UDP_HOST}, UDP_PORT={UDP_PORT}")
 
 # ロギングの設定より後にロードすること
 import ddtrace.auto
 from ddtrace import tracer, patch
 patch(logging=True)
+from azure.identity import DefaultAzureCredential
+from azure.mgmt.authorization import AuthorizationManagementClient
+from azure.mgmt.authorization.models import RoleAssignmentCreateParameters
+import boto3
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+import azure.functions as func
+
+# Initialize AWS IAM client
+iam = boto3.client('iam')
 
 # 共通: ログ出力とレスポンス生成を一箇所に集約
 def log_and_respond(message: str,
