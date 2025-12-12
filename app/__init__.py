@@ -45,8 +45,10 @@ logger.addHandler(stream_handler)
 logger.debug(f"UDP_HOST={UDP_HOST}, UDP_PORT={UDP_PORT}")
 
 # ロギングの設定より後にロードすること
+from datadog_serverless_compat import start
 import ddtrace.auto
 from ddtrace import tracer, patch
+start()
 patch(logging=True)
 from azure.identity import DefaultAzureCredential
 from azure.mgmt.authorization import AuthorizationManagementClient
