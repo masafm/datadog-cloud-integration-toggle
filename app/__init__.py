@@ -188,7 +188,7 @@ def handle_azure_action(action):
                 f"subscription_id={subscription_id}, assignee_principal_id={assignee}, role_definition_id_suffix={role}"
             )
             return log_and_respond(
-                "Role assignment not found or already deleted",
+                "Azure Integration Disabled!",
                 status_code=201,
                 cloud="AZURE",
                 level="info"
