@@ -26,8 +26,8 @@ FORMAT = ('%(asctime)s %(levelname)s [%(name)s] [%(filename)s:%(lineno)d] '
 logging.basicConfig(format=FORMAT)
 
 # 環境変数からUDP送信先のホストとポートを取得
-UDP_HOST = os.getenv('LOG_UDP_HOST', '127.0.0.1')
-UDP_PORT = int(os.getenv('LOG_UDP_PORT', 514))
+UDP_HOST = os.getenv('APP_LOG_UDP_HOST', '127.0.0.1')
+UDP_PORT = int(os.getenv('APP_LOG_UDP_PORT', 514))
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -140,9 +140,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
 
 @tracer.wrap()
 def handle_azure_action(action):
-    assignee = os.environ.get("ASSIGNEE_PRINCIPAL_ID")
-    role = os.environ.get("ROLE_DEFINITION_ID")
-    subscription_id = os.environ.get("SUBSCRIPTION_ID")
+    assignee = os.environ.get("AZURE_ASSIGNEE_PRINCIPAL_ID")
+    role = os.environ.get("AZURE_ROLE_DEFINITION_ID")
+    subscription_id = os.environ.get("AZURE_SUBSCRIPTION_ID")
 
     if not all([subscription_id, assignee, role]):
         logger.error(
@@ -588,11 +588,11 @@ def aws_integration_disable(role_name, policy_arn):
 
 @tracer.wrap()
 def handle_gcp_action(action):
-    service_account_email = os.getenv("SERVICE_ACCOUNT_EMAIL")
+    service_account_email = os.getenv("GCP_SERVICE_ACCOUNT_EMAIL")
     if not service_account_email:
-        logger.error("[GCP] Environment variable SERVICE_ACCOUNT_EMAIL is not set")
+        logger.error("[GCP] Environment variable GCP_SERVICE_ACCOUNT_EMAIL is not set")
         return log_and_respond(
-            "Environment variable SERVICE_ACCOUNT_EMAIL is not set",
+            "Environment variable GCP_SERVICE_ACCOUNT_EMAIL is not set",
             status_code=500,
             cloud="GCP",
             level="error"
