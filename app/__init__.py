@@ -102,6 +102,9 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         integration = req.params.get('integration')
         action = req.params.get('action')
 
+        if action == "status":
+            return func.HttpResponse("OK", status_code=200)
+
         if not integration or not action:
             return log_and_respond(
                 "Missing required parameters: integration or action",
